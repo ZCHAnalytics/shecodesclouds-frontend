@@ -1,6 +1,6 @@
 describe('Cloud Resume E2E', () => {
   const baseUrl = 'https://shecodesclouds.azureedge.net';
-  const api_URL = 'https://zch-resume-function-app.azurewebsites.net/api/VisitorCounter';
+  const apiUrl = 'https://zch-resume-function-app.azurewebsites.net/api/VisitorCounter';
   
   // Generate a unique visitor ID for testing
   const testVisitorId = `cypress-test-${Date.now()}`;
@@ -11,23 +11,22 @@ describe('Cloud Resume E2E', () => {
   })
 
   it('gets the visitor count from API', () => {
-      cy.request({
-        method: 'GET',
-        url: `${apiUrl}?visitorId=${testVisitorId}`,
-        failOnStatusCode: false
-      }).then((response) => {
-        expect(response.status).to.eq(200);
-        expect(response.body).to.have.property('uniqueVisitors');
-        expect(response.body).to.have.property('totalViews');
-        expect(response.body).to.have.property('isNewVisitor');
-        expect(response.body.uniqueVisitors).to.be.a('number');
-        expect(response.body.totalViews).to.be.a('number');
-      });
+    cy.request({
+      method: 'GET',
+      url: `${apiUrl}?visitorId=${testVisitorId}`,
+      failOnStatusCode: false
+    }).then((response) => {
+      expect(response.status).to.eq(200);
+      expect(response.body).to.have.property('uniqueVisitors');
+      expect(response.body).to.have.property('totalViews');
+      expect(response.body).to.have.property('isNewVisitor');
+      expect(response.body.uniqueVisitors).to.be.a('number');
+      expect(response.body.totalViews).to.be.a('number');
     });
-    
+  });
 
   it('increments the visitor count', () => {
-    let beforeCount
+    let initialCount;
 
     // First request - get initial count
     cy.request(`${apiUrl}?visitorId=${testVisitorId}-1`)
