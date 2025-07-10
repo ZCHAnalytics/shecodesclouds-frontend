@@ -36,48 +36,40 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
-      - name: Get Storage Account Name
-        id: get-storage
+      - name: Deploy to Azure Storage
         run: |
+          # Get storage account name
           cd iaac
           terraform init -input=false -no-color > /dev/null
-
           STORAGE_ACCOUNT=$(terraform output -raw storage_account_name 2>/dev/null | head -n1 | tr -d '\n' || true)
           if [[ -z "$STORAGE_ACCOUNT" ]]; then
             STORAGE_ACCOUNT="zchresumestrfrontend"
           fi
-
-          # Use delimiter syntax for GitHub output
-          {
-            echo "storage_account<<EOF"
-            echo "${STORAGE_ACCOUNT}"
-            echo "EOF"
-          } >> $GITHUB_OUTPUT
+          
+          # Go back to root directory
           cd ..
-
-      - name: Upload Static Files
-        run: |
+          
+          # Upload files
           echo "📤 Uploading website files to storage account: ${STORAGE_ACCOUNT}"
-
+          
           az storage blob upload-batch \
-            --account-name ${STORAGE_ACCOUNT} \
+            --account-name "${STORAGE_ACCOUNT}" \
             --source ./frontend \
             --destination '$web' \
             --overwrite
+            - name: Get CDN Details
+              id: get-cdn
+              run: |
+                cd iaac
+                terraform init -input=false -no-color > /dev/null
+                CDN_ENDPOINT=$(terraform output -raw cdn_endpoint_name 2>/dev/null || true)
+                CDN_PROFILE=$(terraform output -raw cdn_profile_name 2>/dev/null || true)
 
-      - name: Get CDN Details
-        id: get-cdn
-        run: |
-          cd iaac
-          terraform init -input=false -no-color > /dev/null
-          CDN_ENDPOINT=$(terraform output -raw cdn_endpoint_name 2>/dev/null || true)
-          CDN_PROFILE=$(terraform output -raw cdn_profile_name 2>/dev/null || true)
+                if [[ -z "$CDN_ENDPOINT" ]]; then CDN_ENDPOINT="shecodesclouds"; fi
+                if [[ -z "$CDN_PROFILE" ]]; then CDN_PROFILE="resume-cdn-profile"; fi
 
-          if [[ -z "$CDN_ENDPOINT" ]]; then CDN_ENDPOINT="shecodesclouds"; fi
-          if [[ -z "$CDN_PROFILE" ]]; then CDN_PROFILE="resume-cdn-profile"; fi
-
-          echo "cdn_endpoint=${CDN_ENDPOINT}" >> $GITHUB_OUTPUT
-          echo "cdn_profile=${CDN_PROFILE}" >> $GITHUB_OUTPUT
+                echo "cdn_endpoint=${CDN_ENDPOINT}" >> $GITHUB_OUTPUT
+                echo "cdn_profile=${CDN_PROFILE}" >> $GITHUB_OUTPUT
 
 
       - name: Purge CDN Cache
