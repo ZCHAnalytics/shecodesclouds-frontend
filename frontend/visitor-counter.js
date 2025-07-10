@@ -21,8 +21,8 @@ async function updateVisitorCount() {
         const visitorId = getVisitorId();
         
         // No key needed since it's anonymous
-        const FUNCTION_URL = 'https://zchresume-api.azurewebsites.net/api/visitorcounter'; 
-        const response = await fetch(`${FUNCTION_URL}?visitorId=${encodeURIComponent(visitorId)}`);
+        const API_URL = 'https://zch-resume-function-app.azurewebsites.net/api/VisitorCounter'; 
+        const response = await fetch(`${API_URL}?visitorId=${encodeURIComponent(visitorId)}`);
         
         if (response.ok) {
             const data = await response.json();

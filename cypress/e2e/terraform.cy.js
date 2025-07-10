@@ -1,4 +1,6 @@
 describe('Cloud Resume E2E', () => {
+  const API_URL = 'https://zch-resume-function-app.azurewebsites.net/api/VisitorCounter';
+  
   it('serves the static resume', () => {
     cy.visit('/')                       // uses baseUrl
     cy.contains('Zulfia').should('be.visible')
