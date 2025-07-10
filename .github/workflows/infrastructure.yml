@@ -81,6 +81,7 @@ jobs:
         uses: hashicorp/setup-terraform@v2
 
       - name: Terraform Init (with backend config)
+        working-directory: iaac
         run: |
           terraform init \
             -backend-config="resource_group_name=tfstate-rg" \
