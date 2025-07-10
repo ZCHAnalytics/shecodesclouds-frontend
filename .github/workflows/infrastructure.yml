@@ -59,16 +59,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: terraform-plan
-          path: plan.tfplan
+          path: iaac/plan.tfplan
 
   apply-frontend-infra:
     name: Apply Frontend Infrastructure
     runs-on: ubuntu-latest
     needs: plan-frontend-infra
-
-    defaults:
-      run:
-        working-directory: iaac
 
     steps:
       - name: Checkout
@@ -98,6 +94,7 @@ jobs:
 
 
       - name: Terraform Apply
+        working-directory: iaac
         run: terraform apply -auto-approve plan.tfplan
 
       - name: Output Details
