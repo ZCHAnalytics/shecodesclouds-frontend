@@ -28,31 +28,56 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      # --- Security Scanning Steps Start ---
+
+      - name: Install Syft
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Generate SBOM for Frontend
+        run: syft frontend -o json > sbom.json
+
+      - name: Upload SBOM Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: sbom-frontend
+          path: sbom.json
+
+      - name: Install Grype
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Run Grype Vulnerability Scan
+        run: |
+          grype sbom:sbom.json -o table --fail-on medium
+
+      - name: Run Gitleaks Secret Scan
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          args: "--verbose --redact"
+
+      # --- Security Scanning Steps End ---
+
       - name: Azure Login
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Deploy to Azure Storage
-        id: deploy-storage  # Add ID to reference outputs
+        id: deploy-storage
         run: |
           echo "📤 Uploading website files to storage account: ${STORAGE_ACCOUNT_NAME}"
-          
-          # Upload files using the environment variable directly
           az storage blob upload-batch \
             --account-name "${STORAGE_ACCOUNT_NAME}" \
             --auth-mode key \
             --source ./frontend \
             --destination '$web' \
             --overwrite
-          
-          # Set output for later steps
           echo "storage_account=${STORAGE_ACCOUNT_NAME}" >> $GITHUB_OUTPUT
 
       - name: Purge CDN Cache
         run: |
           echo "🔄 Purging CDN cache..."
-
           az cdn endpoint purge \
             --resource-group "${RESOURCE_GROUP_NAME}" \
             --profile-name "${CDN_PROFILE_NAME}" \
@@ -65,4 +90,4 @@ jobs:
           echo "### Frontend Deployed! 🎨" >> $GITHUB_STEP_SUMMARY
           echo "- **Files uploaded to**: ${{ steps.deploy-storage.outputs.storage_account }}" >> $GITHUB_STEP_SUMMARY
           echo "- **CDN URL**: https://${CDN_ENDPOINT_NAME}.azureedge.net" >> $GITHUB_STEP_SUMMARY
-          echo "- **Note**: CDN cache purge initiated – changes should be live in 2–10 minutes." >> $GITHUB_STEP_SUMMARY
+          echo "- **Note**: CDN cache purge initiated - changes should be live in 2-10 minutes." >> $GITHUB_STEP_SUMMARY
