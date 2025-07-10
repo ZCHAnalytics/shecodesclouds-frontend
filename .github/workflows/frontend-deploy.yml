@@ -41,8 +41,11 @@ jobs:
         run: |
           cd iaac
           terraform init -input=false -no-color > /dev/null
-          STORAGE_ACCOUNT=$(terraform output -raw storage_account_name 2>/dev/null || echo "zchresumestrfrontend")
-          echo "storage_account=${STORAGE_ACCOUNT}" >> "$GITHUB_OUTPUT"
+          STORAGE_ACCOUNT=$(terraform output -raw storage_account_name 2>/dev/null || true)
+          if [[ -z "$STORAGE_ACCOUNT" ]]; then
+            STORAGE_ACCOUNT="zchresumestrfrontend"
+          fi
+          echo "storage_account=${STORAGE_ACCOUNT}" >> $GITHUB_OUTPUT
 
       - name: Upload Static Files
         run: |
@@ -59,10 +62,15 @@ jobs:
         run: |
           cd iaac
           terraform init -input=false -no-color > /dev/null
-          CDN_ENDPOINT=$(terraform output -raw cdn_endpoint_name 2>/dev/null || echo "shecodesclouds")
-          CDN_PROFILE=$(terraform output -raw cdn_profile_name 2>/dev/null || echo "resume-cdn-profile")
-          echo "cdn_endpoint=${CDN_ENDPOINT}" >> "$GITHUB_OUTPUT"
-          echo "cdn_profile=${CDN_PROFILE}" >> "$GITHUB_OUTPUT"
+          CDN_ENDPOINT=$(terraform output -raw cdn_endpoint_name 2>/dev/null || true)
+          CDN_PROFILE=$(terraform output -raw cdn_profile_name 2>/dev/null || true)
+
+          if [[ -z "$CDN_ENDPOINT" ]]; then CDN_ENDPOINT="shecodesclouds"; fi
+          if [[ -z "$CDN_PROFILE" ]]; then CDN_PROFILE="resume-cdn-profile"; fi
+
+          echo "cdn_endpoint=${CDN_ENDPOINT}" >> $GITHUB_OUTPUT
+          echo "cdn_profile=${CDN_PROFILE}" >> $GITHUB_OUTPUT
+
 
       - name: Purge CDN Cache
         run: |
