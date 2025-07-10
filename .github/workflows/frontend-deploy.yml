@@ -33,68 +33,36 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-
       - name: Deploy to Azure Storage
+        id: deploy-storage  # Add ID to reference outputs
         run: |
-          # Get storage account name
-          cd iaac
-          terraform init -input=false -no-color > /dev/null
-
-          # Execute terraform and capture the output correctly
-          STORAGE_ACCOUNT=$(terraform output -raw storage_account_name 2>/dev/null | head -n1 | tr -d '\n' || echo "")
+          echo "📤 Uploading website files to storage account: ${STORAGE_ACCOUNT_NAME}"
           
-          # Fallback if empty
-          if [[ -z "$STORAGE_ACCOUNT" ]]; then
-            echo "Using fallback storage account name"
-            STORAGE_ACCOUNT="zchresumestrfrontend"
-          fi
-          
-          echo "Storage account name: ${STORAGE_ACCOUNT}"
-
-          # Go back to root directory
-          cd ..
-          
-          # Upload files with proper authentication
-          echo "📤 Uploading website files to storage account: ${STORAGE_ACCOUNT}"
-          
+          # Upload files using the environment variable directly
           az storage blob upload-batch \
-            --account-name "${STORAGE_ACCOUNT}" \
+            --account-name "${STORAGE_ACCOUNT_NAME}" \
             --auth-mode login \
             --source ./frontend \
             --destination '$web' \
             --overwrite
           
-      - name: Get CDN Details
-        id: get-cdn
-        run: |
-          cd iaac
-          terraform init -input=false -no-color > /dev/null
-          CDN_ENDPOINT=$(terraform output -raw cdn_endpoint_name 2>/dev/null || true)
-          CDN_PROFILE=$(terraform output -raw cdn_profile_name 2>/dev/null || true)
-
-          if [[ -z "$CDN_ENDPOINT" ]]; then CDN_ENDPOINT="shecodesclouds"; fi
-          if [[ -z "$CDN_PROFILE" ]]; then CDN_PROFILE="resume-cdn-profile"; fi
-
-          echo "cdn_endpoint=${CDN_ENDPOINT}" >> $GITHUB_OUTPUT
-          echo "cdn_profile=${CDN_PROFILE}" >> $GITHUB_OUTPUT
-
+          # Set output for later steps
+          echo "storage_account=${STORAGE_ACCOUNT_NAME}" >> $GITHUB_OUTPUT
 
       - name: Purge CDN Cache
         run: |
           echo "🔄 Purging CDN cache..."
 
           az cdn endpoint purge \
-            --resource-group ${{ env.RESOURCE_GROUP_NAME }} \
-            --profile-name ${{ steps.get-cdn.outputs.cdn_profile }} \
-            --name ${{ steps.get-cdn.outputs.cdn_endpoint }} \
+            --resource-group "${RESOURCE_GROUP_NAME}" \
+            --profile-name "${CDN_PROFILE_NAME}" \
+            --name "${CDN_ENDPOINT_NAME}" \
             --content-paths "/*" \
             --no-wait
 
       - name: Deployment Summary
         run: |
           echo "### Frontend Deployed! 🎨" >> $GITHUB_STEP_SUMMARY
-          echo "- **Files uploaded to**: ${{ steps.get-storage.outputs.storage_account }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **CDN URL**: https://${{ steps.get-cdn.outputs.cdn_endpoint }}.azureedge.net" >> $GITHUB_STEP_SUMMARY
+          echo "- **Files uploaded to**: ${{ steps.deploy-storage.outputs.storage_account }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **CDN URL**: https://${CDN_ENDPOINT_NAME}.azureedge.net" >> $GITHUB_STEP_SUMMARY
           echo "- **Note**: CDN cache purge initiated – changes should be live in 2–10 minutes." >> $GITHUB_STEP_SUMMARY
