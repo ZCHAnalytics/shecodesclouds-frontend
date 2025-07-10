@@ -41,7 +41,7 @@ jobs:
           cd iaac
           terraform init
           STORAGE_ACCOUNT=$(terraform output -raw storage_account_name 2>/dev/null || echo "zchresumestrfrontend")
-          echo "storage_account=$STORAGE_ACCOUNT" >> "$GITHUB_OUTPUT"
+          echo "storage_account=${STORAGE_ACCOUNT}" >> "$GITHUB_OUTPUT"
           
       - name: Upload Static Files
         run: |
@@ -59,8 +59,8 @@ jobs:
           cd iaac
           CDN_ENDPOINT=$(terraform output -raw cdn_endpoint_name 2>/dev/null || echo "shecodesclouds")
           CDN_PROFILE=$(terraform output -raw cdn_profile_name 2>/dev/null || echo "resume-cdn-profile")
-          echo "cdn_endpoint=$CDN_ENDPOINT" >> "$GITHUB_OUTPUT"
-          echo "cdn_profile=$CDN_PROFILE" >> "$GITHUB_OUTPUT"
+          echo "cdn_endpoint=${CDN_ENDPOINT}" >> "$GITHUB_OUTPUT"
+          echo "cdn_profile=${CDN_PROFILE}" >> "$GITHUB_OUTPUT"
 
       - name: Purge CDN Cache
         run: |
