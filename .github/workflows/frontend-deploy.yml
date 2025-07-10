@@ -40,18 +40,18 @@ jobs:
         id: get-storage
         run: |
           cd iaac
-        terraform init -input=false -no-color > /dev/null
-        STORAGE_ACCOUNT=$(terraform output -raw storage_account_name 2>/dev/null || true)
-        if [[ -z "$STORAGE_ACCOUNT" ]]; then
-          STORAGE_ACCOUNT="zchresumestrfrontend"
-        fi
+          terraform init -input=false -no-color > /dev/null
+          STORAGE_ACCOUNT=$(terraform output -raw storage_account_name 2>/dev/null || true)
+          if [[ -z "$STORAGE_ACCOUNT" ]]; then
+            STORAGE_ACCOUNT="zchresumestrfrontend"
+          fi
 
-        # Use delimiter syntax for GitHub output
-        {
-          echo "storage_account<<EOF"
-          echo "${STORAGE_ACCOUNT}"
-          echo "EOF"
-        } >> $GITHUB_OUTPUT
+          # Use delimiter syntax for GitHub output
+          {
+            echo "storage_account<<EOF"
+            echo "${STORAGE_ACCOUNT}"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Upload Static Files
         run: |
