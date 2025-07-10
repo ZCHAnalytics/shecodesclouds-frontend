@@ -41,7 +41,7 @@ jobs:
           # Upload files using the environment variable directly
           az storage blob upload-batch \
             --account-name "${STORAGE_ACCOUNT_NAME}" \
-            --auth-mode login \
+            --auth-mode key \
             --source ./frontend \
             --destination '$web' \
             --overwrite
