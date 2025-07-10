@@ -41,7 +41,8 @@ jobs:
         run: |
           cd iaac
           terraform init -input=false -no-color > /dev/null
-          STORAGE_ACCOUNT=$(terraform output -raw storage_account_name 2>/dev/null || true)
+
+          STORAGE_ACCOUNT=$(terraform output -raw storage_account_name 2>/dev/null | head -n1 | tr -d '\n' || true)
           if [[ -z "$STORAGE_ACCOUNT" ]]; then
             STORAGE_ACCOUNT="zchresumestrfrontend"
           fi
@@ -52,13 +53,14 @@ jobs:
             echo "${STORAGE_ACCOUNT}"
             echo "EOF"
           } >> $GITHUB_OUTPUT
+          cd ..
 
       - name: Upload Static Files
         run: |
-          echo "📤 Uploading website files to storage account: ${{ steps.get-storage.outputs.storage_account }}"
+          echo "📤 Uploading website files to storage account: ${STORAGE_ACCOUNT}"
 
           az storage blob upload-batch \
-            --account-name ${{ steps.get-storage.outputs.storage_account }} \
+            --account-name ${STORAGE_ACCOUNT} \
             --source ./frontend \
             --destination '$web' \
             --overwrite
