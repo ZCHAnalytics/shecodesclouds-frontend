@@ -7,6 +7,14 @@ terraform {
   }
   required_version = ">= 1.0"
 }
+terraform {
+  backend "azurerm" {
+    resource_group_name  = "tfstate-rg"
+    storage_account_name = "zchtfstatestorageacc"
+    container_name       = "tfstate"
+    key                  = "frontend.tfstate"
+  }
+}
 
 provider "azurerm" {
   features {
@@ -15,6 +23,7 @@ provider "azurerm" {
     }
   }
 }
+
 # Create the resource group
 resource "azurerm_resource_group" "resume_rg" {
   name     = var.resource_group_name

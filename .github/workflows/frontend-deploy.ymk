@@ -36,7 +36,7 @@ jobs:
       - name: Get Storage Account Name
         id: get-storage
         run: |
-          cd iaac/frontend_iaac
+          cd iaac
           terraform init
           STORAGE_ACCOUNT=$(terraform output -raw storage_account_name 2>/dev/null || echo "zchresumestrfrontend")
           echo "storage_account=$STORAGE_ACCOUNT" >> $GITHUB_OUTPUT
