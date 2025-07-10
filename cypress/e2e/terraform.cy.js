@@ -1,5 +1,9 @@
 describe('Cloud Resume E2E', () => {
-  const API_URL = 'https://zch-resume-function-app.azurewebsites.net/api/VisitorCounter';
+  const baseUrl = 'https://shecodesclouds.azureedge.net';
+  const api_URL = 'https://zch-resume-function-app.azurewebsites.net/api/VisitorCounter';
+  
+  // Generate a unique visitor ID for testing
+  const testVisitorId = `cypress-test-${Date.now()}`;
   
   it('serves the static resume', () => {
     cy.visit('/')                       // uses baseUrl
@@ -7,26 +11,34 @@ describe('Cloud Resume E2E', () => {
   })
 
   it('gets the visitor count from API', () => {
-    cy.request({
-      method: 'GET',
-      url: Cypress.env('apiUrl')
-    }).then((resp) => {
-      expect(resp.status).to.equal(200)
-      expect(resp.body).to.have.property('count').and.be.a('number')
-    })
-  })
+      cy.request({
+        method: 'GET',
+        url: `${apiUrl}?visitorId=${testVisitorId}`,
+        failOnStatusCode: false
+      }).then((response) => {
+        expect(response.status).to.eq(200);
+        expect(response.body).to.have.property('uniqueVisitors');
+        expect(response.body).to.have.property('totalViews');
+        expect(response.body).to.have.property('isNewVisitor');
+        expect(response.body.uniqueVisitors).to.be.a('number');
+        expect(response.body.totalViews).to.be.a('number');
+      });
+    });
+    
 
   it('increments the visitor count', () => {
     let beforeCount
 
-    cy.request(Cypress.env('apiUrl'))
-      .its('body.count')
-      .then((c) => {
-        beforeCount = c
-        // POST to increment
-        cy.request('POST', Cypress.env('apiUrl'))
-          .its('body.count')
-          .should('equal', beforeCount + 1)
-      })
-  })
-})
+    // First request - get initial count
+    cy.request(`${apiUrl}?visitorId=${testVisitorId}-1`)
+      .then((response) => {
+        initialCount = response.body.totalViews;
+      });
+    
+    // Second request - should increment total views
+    cy.request(`${apiUrl}?visitorId=${testVisitorId}-2`)
+      .then((response) => {
+        expect(response.body.totalViews).to.be.greaterThan(initialCount);
+      });
+  });
+});
