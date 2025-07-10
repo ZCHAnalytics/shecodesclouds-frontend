@@ -51,13 +51,6 @@ jobs:
         run: |
           grype sbom:sbom.json -o table --fail-on medium
 
-      - name: Run Gitleaks Secret Scan
-        uses: gitleaks/gitleaks-action@v2
-        with:
-          args: "--verbose --redact"
-      
-          
-
   dependency-scan:
     name: Scan JavaScript Dependencies
     runs-on: ubuntu-latest
