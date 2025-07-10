@@ -17,7 +17,7 @@ on:
   pull_request:
     branches: [ "main" ]
   schedule:
-    - cron: '0 0 1 * *'
+    - cron: '0 0 1 * * # Runs at midnight UTC on the 1st day of every month
 
 jobs:
   analyze:
