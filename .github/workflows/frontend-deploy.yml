@@ -32,7 +32,9 @@ jobs:
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        
       - name: Get Storage Account Name
         id: get-storage
         run: |
