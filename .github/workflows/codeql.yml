@@ -17,7 +17,7 @@ on:
   pull_request:
     branches: [ "main" ]
   schedule:
-    - cron: '0 0 1 * *' # Runs at midnight UTC on the 1st day of every month
+    - cron: '0 0 1 * * # Runs at midnight UTC on the 1st day of every month
 
 jobs:
   analyze:
@@ -98,4 +98,4 @@ jobs:
       uses: github/codeql-action/analyze@v3
       with:
         category: "/language:${{matrix.language}}"
-        fail-on: high 
+        fail-on: high
