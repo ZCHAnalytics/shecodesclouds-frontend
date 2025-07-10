@@ -1,44 +1,6 @@
 git # Old cypress learning folder
 cypress-realworld-testing-course-app/
 
-# Old function app with A/B testing
-resume-visitor-fn/
-
-# Old terraform file without CDN
-terraform-resume/
-
-# Playwright tests 
-tests/
-
-# Azure Functions
-.funcignore
-bin/
-obj/
-csx/
-.vs/
-edge/
-Publish/
-*.user
-*.suo
-*.cscfg
-*.Cache
-project.lock.json
-/packages
-/TestResults
-/tools/NuGet.exe
-/App_Data
-/secrets
-/data
-.secrets
-appsettings.json
-local.settings.json
-.func/
-func-cli/
-*.zip
-__blobstorage__/
-__queuestorage__/
-__azurite_db*__.json
-
 # Python
 __pycache__/
 *.py[cod]
