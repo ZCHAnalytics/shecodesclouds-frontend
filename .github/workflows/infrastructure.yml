@@ -44,6 +44,8 @@ jobs:
         run: touch terraform.log
 
       - name: Terraform Plan
+        working-directory: iaac 
+
         env:
           TF_LOG: DEBUG
           TF_LOG_PATH: terraform.log
@@ -92,12 +94,12 @@ jobs:
           name: terraform-plan
           path: iaac
 
-
       - name: Terraform Apply
         working-directory: iaac
         run: terraform apply -auto-approve plan.tfplan
 
       - name: Output Details
+        working-directory: iaac
         run: |
           echo "### Frontend Infrastructure Deployed! 🚀" >> $GITHUB_STEP_SUMMARY
           echo "- **Frontend URL**: $(terraform output -raw frontend_url)" >> $GITHUB_STEP_SUMMARY
