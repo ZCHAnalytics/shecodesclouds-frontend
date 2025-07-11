@@ -92,7 +92,7 @@ jobs:
           terraform init -input=false -no-color > /dev/null
           
           RAW=$(terraform output -raw storage_account_name 2>/dev/null || echo "")
-          CLEANED=$(echo "$RAW" | tr -d '\r\n' | sed 's/::/%3A%3A/g')
+          CLEANED=$(echo "$RAW" | tr -d '\r\n')
 
           if [[ -z "$CLEANED" ]]; then
             CLEANED="zchresumestrfrontend"
