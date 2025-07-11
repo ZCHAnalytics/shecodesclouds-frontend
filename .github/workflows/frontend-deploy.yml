@@ -102,9 +102,9 @@ jobs:
       
       - name: Deploy to Azure Storage
         id: deploy-storage
-        run: |
-          STORAGE_ACCOUNT=${{ steps.get-storage.outputs.storage_account }}
-            
+        env: 
+          STORAGE_ACCOUNT: ${{ steps.get-storage.outputs.storage_account }}
+        run: |     
           echo "📤 Uploading website files to storage account: ${STORAGE_ACCOUNT}"
 
           az storage blob upload-batch \
