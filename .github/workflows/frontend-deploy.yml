@@ -90,11 +90,14 @@ jobs:
         run: |
           cd iaac
           terraform init -input=false -no-color > /dev/null
-          STORAGE_ACCOUNT=$(terraform output -raw storage_account_name 2>/dev/null || true)
-          if [[ -z "$STORAGE_ACCOUNT" ]]; then
-            STORAGE_ACCOUNT="zchresumestrfrontend"
+          
+          RAW=$(terraform output -raw storage_account_name 2>/dev/null || echo "")
+          CLEANED=$(echo "$RAW" | tr -d '\r\n' | sed 's/::/%3A%3A/g')
+
+          if [[ -z "$CLEANED" ]]; then
+            CLEANED="zchresumestrfrontend"
           fi
-          echo "storage_account=${STORAGE_ACCOUNT}" >> "$GITHUB_OUTPUT"
+          echo "storage_account=$CLEANED" >> "$GITHUB_OUTPUT"
 
       
       - name: Deploy to Azure Storage
