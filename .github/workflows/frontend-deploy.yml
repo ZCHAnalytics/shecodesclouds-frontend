@@ -94,7 +94,7 @@ jobs:
           if [[ -z "$STORAGE_ACCOUNT" ]]; then
             STORAGE_ACCOUNT="zchresumestrfrontend"
           fi
-          echo "storage_account=${STORAGE_ACCOUNT}" >> $GITHUB_OUTPUT
+          echo "storage_account=${STORAGE_ACCOUNT}" >> "$GITHUB_OUTPUT"
 
       
       - name: Deploy to Azure Storage
@@ -107,22 +107,22 @@ jobs:
             --source ./frontend \
             --destination '$web' \
             --overwrite
-          echo "storage_account=${STORAGE_ACCOUNT}" >> $GITHUB_OUTPUT
+          echo "storage_account=${STORAGE_ACCOUNT}" >> "$GITHUB_OUTPUT"
 
 
-          - name: Get CDN Details
-          id: get-cdn
-          run: |
-            cd iaac
-            terraform init -input=false -no-color > /dev/null
-            CDN_ENDPOINT=$(terraform output -raw cdn_endpoint_name 2>/dev/null || true)
-            CDN_PROFILE=$(terraform output -raw cdn_profile_name 2>/dev/null || true)
+      - name: Get CDN Details
+        id: get-cdn
+        run: |
+          cd iaac
+          terraform init -input=false -no-color > /dev/null
+          CDN_ENDPOINT=$(terraform output -raw cdn_endpoint_name 2>/dev/null || true)
+          CDN_PROFILE=$(terraform output -raw cdn_profile_name 2>/dev/null || true)
 
-            if [[ -z "$CDN_ENDPOINT" ]]; then CDN_ENDPOINT="shecodesclouds"; fi
-            if [[ -z "$CDN_PROFILE" ]]; then CDN_PROFILE="resume-cdn-profile"; fi
+          if [[ -z "$CDN_ENDPOINT" ]]; then CDN_ENDPOINT="shecodesclouds"; fi
+          if [[ -z "$CDN_PROFILE" ]]; then CDN_PROFILE="resume-cdn-profile"; fi
 
-            echo "cdn_endpoint=${CDN_ENDPOINT}" >> $GITHUB_OUTPUT
-            echo "cdn_profile=${CDN_PROFILE}" >> $GITHUB_OUTPUT
+          echo "cdn_endpoint=${CDN_ENDPOINT}" >> "$GITHUB_OUTPUT"
+          echo "cdn_profile=${CDN_PROFILE}" >> "$GITHUB_OUTPUT"
 
             
       - name: Purge CDN Cache
