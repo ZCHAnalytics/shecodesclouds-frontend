@@ -103,14 +103,17 @@ jobs:
       - name: Deploy to Azure Storage
         id: deploy-storage
         run: |
+          STORAGE_ACCOUNT=${{ steps.get-storage.outputs.storage_account }}
+            
           echo "📤 Uploading website files to storage account: ${STORAGE_ACCOUNT}"
+
           az storage blob upload-batch \
-            --account-name "${STORAGE_ACCOUNT}" \
+            --account-name "$STORAGE_ACCOUNT" \
             --auth-mode key \
             --source ./frontend \
             --destination '$web' \
             --overwrite
-          echo "storage_account=${STORAGE_ACCOUNT}" >> "$GITHUB_OUTPUT"
+          echo "storage_account=$STORAGE_ACCOUNT" >> "$GITHUB_OUTPUT"
 
 
       - name: Get CDN Details
