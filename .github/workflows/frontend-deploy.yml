@@ -73,16 +73,80 @@ jobs:
       - name: Get Storage Account Name
         id: get-storage
         run: |
-          cd iaac
-          terraform init -input=false -no-color > /dev/null
-
-          RAW=$(terraform output -raw storage_account_name 2>/dev/null || echo "")
-          CLEANED=$(echo "$RAW" | tr -d '\r\n')
-
-          if [[ -z "$CLEANED" ]]; then
-            CLEANED="zchresumestrfrontend"
+          
+          # Check if iaac directory exists
+          if [ ! -d "iaac" ]; then
+            echo "❌ iaac directory not found"
+            echo "storage_account=${{ env.STORAGE_ACCOUNT_NAME }}" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+
+          cd iaac
+          # Initialize Terraform with backend config (same as infra workflow)
+          terraform init \
+            -backend-config="resource_group_name=tfstate-rg" \
+            -backend-config="storage_account_name=zchtfstatestorageacc" \
+            -backend-config="container_name=tfstate" \
+            -backend-config="key=frontend.tfstate" \
+            -input=false \
+            -no-color
+          
+          # Get the storage account name from Terraform outputs
+          if terraform state list > /dev/null 2>&1; then
+            RAW=$(terraform output -raw storage_account_name 2>/dev/null || echo "")
+            CLEANED=$(echo "$RAW" | tr -d '\r\n')
+            
+            if [[ -z "$CLEANED" ]]; then
+              echo "⚠️ Could not get storage account from Terraform state, using default"
+              CLEANED="${{ env.STORAGE_ACCOUNT_NAME }}"
+            else
+              echo "✅ Got storage account from Terraform: $CLEANED"
+            fi
+          else
+            echo "⚠️ No Terraform state found, using default"
+            CLEANED="${{ env.STORAGE_ACCOUNT_NAME }}"
+          fi
+          
           echo "storage_account=$CLEANED" >> "$GITHUB_OUTPUT"
+
+      - name: Verify Storage Account and Static Website
+        run: |
+          STORAGE_ACCOUNT="${{ steps.get-storage.outputs.storage_account }}"
+          
+          # Check if storage account exists
+          STORAGE_EXISTS=$(az storage account show \
+            --name "${STORAGE_ACCOUNT}" \
+            --query "name" -o tsv 2>/dev/null || echo "")
+          
+          if [[ -z "$STORAGE_EXISTS" ]]; then
+            echo "❌ Storage account not found: ${STORAGE_ACCOUNT}"
+            exit 1
+          fi
+          
+          echo "✅ Storage account verified: $STORAGE_EXISTS"
+          
+          # Check if static website is enabled
+          STATIC_WEBSITE=$(az storage blob service-properties show \
+            --account-name "${STORAGE_ACCOUNT}" \
+            --auth-mode login \
+            --query "staticWebsite.enabled" -o tsv 2>/dev/null || echo "false")
+          
+          if [[ "$STATIC_WEBSITE" != "true" ]]; then
+            echo "❌ Static website is not enabled on storage account"
+            exit 1
+          fi
+          
+          echo "✅ Static website is enabled"
+
+      - name: Check Frontend Directory
+        run: |
+          if [ ! -d "./frontend" ]; then
+            echo "❌ Frontend directory not found"
+            exit 1
+          fi
+          
+          echo "📁 Frontend files to upload:"
+          ls -la ./frontend/
 
       - name: Deploy to Azure Storage
         id: deploy-storage
@@ -90,27 +154,65 @@ jobs:
           STORAGE_ACCOUNT: ${{ steps.get-storage.outputs.storage_account }}
         run: |
           echo "📤 Uploading website files to storage account: ${STORAGE_ACCOUNT}"
-
-          az storage blob upload-batch \
+          
+          # Try upload with login auth
+          if az storage blob upload-batch \
             --account-name "${STORAGE_ACCOUNT}" \
             --auth-mode login \
             --source ./frontend \
             --destination '$web' \
-            --overwrite
+            --overwrite; then
+            echo "✅ Upload completed successfully with login auth"
+          else
+            echo "⚠️ Login auth failed, trying with account key..."
+            
+            # Get storage account resource group (might be different from frontend RG)
+            STORAGE_RG=$(az storage account show \
+              --name "${STORAGE_ACCOUNT}" \
+              --query "resourceGroup" -o tsv)
+            
+            # Get account key as fallback
+            ACCOUNT_KEY=$(az storage account keys list \
+              --account-name "${STORAGE_ACCOUNT}" \
+              --resource-group "${STORAGE_RG}" \
+              --query "[0].value" -o tsv)
+            
+            az storage blob upload-batch \
+              --account-name "${STORAGE_ACCOUNT}" \
+              --account-key "${ACCOUNT_KEY}" \
+              --source ./frontend \
+              --destination '$web' \
+              --overwrite
+            
+            echo "✅ Upload completed successfully with account key"
+          fi
+          
           echo "storage_account=${STORAGE_ACCOUNT}" >> "$GITHUB_OUTPUT"
 
-      - name: Get CDN Details
+      - name: Get CDN Details from Terraform
         id: get-cdn
         run: |
           cd iaac
-          terraform init -input=false -no-color > /dev/null
-
-          CDN_ENDPOINT=$(terraform output -raw cdn_endpoint_name 2>/dev/null || true)
-          CDN_PROFILE=$(terraform output -raw cdn_profile_name 2>/dev/null || true)
-
-          if [[ -z "$CDN_ENDPOINT" ]]; then CDN_ENDPOINT="shecodesclouds"; fi
-          if [[ -z "$CDN_PROFILE" ]]; then CDN_PROFILE="resume-cdn-profile"; fi
-
+          
+          # No need to init again, already done in previous step
+          CDN_ENDPOINT=$(terraform output -raw cdn_endpoint_name 2>/dev/null || echo "")
+          CDN_PROFILE=$(terraform output -raw cdn_profile_name 2>/dev/null || echo "")
+          
+          # Clean the outputs
+          CDN_ENDPOINT=$(echo "$CDN_ENDPOINT" | tr -d '\r\n')
+          CDN_PROFILE=$(echo "$CDN_PROFILE" | tr -d '\r\n')
+          
+          # Use defaults if outputs are empty
+          if [[ -z "$CDN_ENDPOINT" ]]; then 
+            echo "⚠️ Could not get CDN endpoint from Terraform, using default"
+            CDN_ENDPOINT="${{ env.CDN_ENDPOINT_NAME }}"
+          fi
+          
+          if [[ -z "$CDN_PROFILE" ]]; then 
+            echo "⚠️ Could not get CDN profile from Terraform, using default"
+            CDN_PROFILE="${{ env.CDN_PROFILE_NAME }}"
+          fi
+          
           echo "cdn_endpoint=$CDN_ENDPOINT" >> "$GITHUB_OUTPUT"
           echo "cdn_profile=$CDN_PROFILE" >> "$GITHUB_OUTPUT"
 
@@ -121,12 +223,25 @@ jobs:
           CDN_ENDPOINT_NAME: ${{ steps.get-cdn.outputs.cdn_endpoint }}
         run: |
           echo "🔄 Purging CDN cache..."
-          az cdn endpoint purge \
+          
+          # Check if CDN endpoint exists before trying to purge
+          CDN_EXISTS=$(az cdn endpoint show \
             --resource-group "${RESOURCE_GROUP_NAME}" \
             --profile-name "${CDN_PROFILE_NAME}" \
             --name "${CDN_ENDPOINT_NAME}" \
-            --content-paths "/*" \
-            --no-wait
+            --query "name" -o tsv 2>/dev/null || echo "")
+          
+          if [[ -n "$CDN_EXISTS" ]]; then
+            az cdn endpoint purge \
+              --resource-group "${RESOURCE_GROUP_NAME}" \
+              --profile-name "${CDN_PROFILE_NAME}" \
+              --name "${CDN_ENDPOINT_NAME}" \
+              --content-paths "/*" \
+              --no-wait
+            echo "✅ CDN cache purge initiated"
+          else
+            echo "⚠️ CDN endpoint not found, skipping cache purge"
+          fi
 
       - name: Deployment Summary
         run: |
@@ -134,6 +249,13 @@ jobs:
           echo "- **Files uploaded to**: ${{ steps.deploy-storage.outputs.storage_account }}" >> $GITHUB_STEP_SUMMARY
           echo "- **CDN URL**: https://${{ steps.get-cdn.outputs.cdn_endpoint }}.azureedge.net" >> $GITHUB_STEP_SUMMARY
           echo "- **Note**: CDN cache purge initiated - changes should be live in 2-10 minutes." >> $GITHUB_STEP_SUMMARY
+          
+          # Also try to get the static website URL from Terraform
+          cd iaac
+          STATIC_URL=$(terraform output -raw static_website_url 2>/dev/null || echo "")
+          if [[ -n "$STATIC_URL" ]]; then
+            echo "- **Static Website URL**: $STATIC_URL" >> $GITHUB_STEP_SUMMARY
+          fi
 
   dependency-scan:
     name: Scan JavaScript Dependencies
