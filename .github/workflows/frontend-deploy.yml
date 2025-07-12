@@ -69,6 +69,11 @@ jobs:
         uses: hashicorp/setup-terraform@v2        # Installs Terraform CLI
         with: 
           terraform_version: 1.12.2
+          # TROUBLESHOOTING FIX #1: Added terraform_wrapper: false
+          # The hashicorp/setup-terraform@v2 action by default wraps terraform commands
+          # and adds debug output like "[command]/path/to/terraform-bin output -raw ..."
+          # This was corrupting our terraform output values, causing storage account names
+          # to include debug text, which made Azure commands fail.
           terraform_wrapper: false # This prevents the wrapper that adds debug output 
 
       - name: Get Storage Account Name
@@ -83,7 +88,12 @@ jobs:
           fi
 
           cd iaac
-          # Initialise Terraform with backend config (same as infra workflow)
+          
+          # TROUBLESHOOTING FIX #2: Added proper backend configuration
+          # Initially, terraform init was running without backend config, so it couldn't
+          # access the remote state where infrastructure outputs are stored.
+          # We matched this with the infrastructure deployment workflow to ensure
+          # we're reading from the same remote state.
           terraform init \
             -backend-config="resource_group_name=tfstate-rg" \
             -backend-config="storage_account_name=zchtfstatestorageacc" \
@@ -109,6 +119,9 @@ jobs:
           
           echo "storage_account=$STORAGE_ACCOUNT" >> "$GITHUB_OUTPUT"
 
+      # TROUBLESHOOTING FIX #4: Added verification steps
+      # These steps ensure the storage account exists and has static website enabled
+      # before attempting to upload files, providing better error messages
       - name: Verify Storage Account and Static Website
         run: |
           STORAGE_ACCOUNT="${{ steps.get-storage.outputs.storage_account }}"
@@ -155,6 +168,9 @@ jobs:
         run: |
           echo "📤 Uploading website files to storage account: ${STORAGE_ACCOUNT}"
           
+          # TROUBLESHOOTING FIX #5: Added fallback authentication method
+          # If the service principal doesn't have proper Storage Blob Data Contributor role,
+          # the login auth mode might fail. We added a fallback to use storage account keys.
           # Try upload with login auth
           if az storage blob upload-batch \
             --account-name "${STORAGE_ACCOUNT}" \
@@ -166,7 +182,8 @@ jobs:
           else
             echo "⚠️ Login auth failed, trying with account key..."
             
-            # Get storage account resource group (might be different from frontend RG)
+            # TROUBLESHOOTING FIX #6: Get correct resource group for storage account
+            # Storage account might be in a different resource group than the frontend RG
             STORAGE_RG=$(az storage account show \
               --name "${STORAGE_ACCOUNT}" \
               --query "resourceGroup" -o tsv)
@@ -198,7 +215,9 @@ jobs:
           CDN_ENDPOINT=$(terraform output -raw cdn_endpoint_name 2>/dev/null || echo "")
           CDN_PROFILE=$(terraform output -raw cdn_profile_name 2>/dev/null || echo "")
           
-          # Check for debug output and use defaults if found
+          # TROUBLESHOOTING FIX #7: Check for debug output contamination
+          # Even with terraform_wrapper: false, we check if outputs contain debug text
+          # and fall back to environment variables if they do
           if [[ "$CDN_ENDPOINT" == *"::debug::"* ]] || [[ -z "$CDN_ENDPOINT" ]]; then 
             echo "⚠️ Could not get clean CDN endpoint from Terraform, using default"
             CDN_ENDPOINT="${{ env.CDN_ENDPOINT_NAME }}"
@@ -211,6 +230,7 @@ jobs:
           
           echo "cdn_endpoint=$CDN_ENDPOINT" >> "$GITHUB_OUTPUT"
           echo "cdn_profile=$CDN_PROFILE" >> "$GITHUB_OUTPUT"
+          
       - name: Purge CDN Cache
         env:
           RESOURCE_GROUP_NAME: ${{ env.RESOURCE_GROUP_NAME }}
@@ -219,7 +239,8 @@ jobs:
         run: |
           echo "🔄 Purging CDN cache..."
           
-          # Check if CDN endpoint exists before trying to purge
+          # TROUBLESHOOTING FIX #8: Verify CDN exists before purging
+          # Prevents errors if CDN endpoint doesn't exist yet
           CDN_EXISTS=$(az cdn endpoint show \
             --resource-group "${RESOURCE_GROUP_NAME}" \
             --profile-name "${CDN_PROFILE_NAME}" \
