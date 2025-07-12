@@ -135,7 +135,7 @@ jobs:
         run: |
           echo "### Frontend Deployed! 🎨" >> $GITHUB_STEP_SUMMARY
           echo "- **Files uploaded to**: ${{ steps.deploy-storage.outputs.storage_account }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **CDN URL**: https://${CDN_ENDPOINT_NAME}.azureedge.net" >> $GITHUB_STEP_SUMMARY
+          echo "- **CDN URL**: https://${{ steps.get-cdn.outputs.cdn_endpoint }}.azureedge.net" >> $GITHUB_STEP_SUMMARY
           echo "- **Note**: CDN cache purge initiated - changes should be live in 2-10 minutes." >> $GITHUB_STEP_SUMMARY
 
           
