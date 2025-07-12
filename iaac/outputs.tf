@@ -20,3 +20,8 @@ output "cdn_endpoint_name" {
   description = "CDN endpoint name for purging"
   value       = azurerm_cdn_endpoint.resume_endpoint.name
 }
+
+output "cdn_profile_name" {
+  value       = azurerm_cdn_profile.resume_cdn.name
+  description = "CDN Profile Name"
+}
