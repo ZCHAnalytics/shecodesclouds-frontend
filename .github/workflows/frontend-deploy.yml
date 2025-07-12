@@ -54,21 +54,17 @@ jobs:
       
       # --- Security Scanning Steps End ---
 
-
-          
       - name: Mask GitHub Token
         run: echo "::add-mask::${{ secrets.GITHUB_TOKEN }}"  # Hide GitHub token in logs
 
       - name: Mask Azure Subscription ID
-        run: echo "::add-mask::${{ secrets.AZURE_SUBSCRIPTION_ID }}"  # Hide sub ID in logs
-
+        run: echo "::add-mask::${{ secrets.AZURE_SUBSCRIPTION_ID }}"  # Hide subscription ID in logs
 
       - name: Azure Login
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}      # JSON secret containing SP credentials
 
-      
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2        # Installs Terraform CLI
         with: 
@@ -79,7 +75,7 @@ jobs:
         run: |
           cd iaac
           terraform init -input=false -no-color > /dev/null
-          
+
           RAW=$(terraform output -raw storage_account_name 2>/dev/null || echo "")
           CLEANED=$(echo "$RAW" | tr -d '\r\n')
 
@@ -88,12 +84,11 @@ jobs:
           fi
           echo "storage_account=$CLEANED" >> "$GITHUB_OUTPUT"
 
-      
       - name: Deploy to Azure Storage
         id: deploy-storage
-        env: 
+        env:
           STORAGE_ACCOUNT: ${{ steps.get-storage.outputs.storage_account }}
-        run: |     
+        run: |
           echo "📤 Uploading website files to storage account: ${STORAGE_ACCOUNT}"
           echo "DEBUG: STORAGE_ACCOUNT='${STORAGE_ACCOUNT}'"
 
@@ -105,29 +100,32 @@ jobs:
             --overwrite
           echo "storage_account=${STORAGE_ACCOUNT}" >> "$GITHUB_OUTPUT"
 
-
       - name: Get CDN Details
         id: get-cdn
         run: |
           cd iaac
           terraform init -input=false -no-color > /dev/null
+
           CDN_ENDPOINT=$(terraform output -raw cdn_endpoint_name 2>/dev/null || true)
           CDN_PROFILE=$(terraform output -raw cdn_profile_name 2>/dev/null || true)
 
           if [[ -z "$CDN_ENDPOINT" ]]; then CDN_ENDPOINT="shecodesclouds"; fi
           if [[ -z "$CDN_PROFILE" ]]; then CDN_PROFILE="resume-cdn-profile"; fi
 
-          echo "cdn_endpoint=${CDN_ENDPOINT}" >> "$GITHUB_OUTPUT"
-          echo "cdn_profile=${CDN_PROFILE}" >> "$GITHUB_OUTPUT"
+          echo "cdn_endpoint=$CDN_ENDPOINT" >> "$GITHUB_OUTPUT"
+          echo "cdn_profile=$CDN_PROFILE" >> "$GITHUB_OUTPUT"
 
-            
       - name: Purge CDN Cache
+        env:
+          RESOURCE_GROUP_NAME: ${{ env.RESOURCE_GROUP_NAME }}
+          CDN_PROFILE_NAME: ${{ steps.get-cdn.outputs.cdn_profile }}
+          CDN_ENDPOINT_NAME: ${{ steps.get-cdn.outputs.cdn_endpoint }}
         run: |
           echo "🔄 Purging CDN cache..."
           az cdn endpoint purge \
             --resource-group "${RESOURCE_GROUP_NAME}" \
-            --profile-name "${{ steps.get-cdn.outputs.cdn_profile }}" \
-            --name "${{ steps.get-cdn.outputs.cdn_endpoint }}" \
+            --profile-name "${CDN_PROFILE_NAME}" \
+            --name "${CDN_ENDPOINT_NAME}" \
             --content-paths "/*" \
             --no-wait
 
@@ -138,7 +136,6 @@ jobs:
           echo "- **CDN URL**: https://${{ steps.get-cdn.outputs.cdn_endpoint }}.azureedge.net" >> $GITHUB_STEP_SUMMARY
           echo "- **Note**: CDN cache purge initiated - changes should be live in 2-10 minutes." >> $GITHUB_STEP_SUMMARY
 
-          
   dependency-scan:
     name: Scan JavaScript Dependencies
     runs-on: ubuntu-latest
@@ -161,4 +158,3 @@ jobs:
         
       - name: Run npm audit
         run: npm audit --audit-level=moderate
-        working-directory: frontend
