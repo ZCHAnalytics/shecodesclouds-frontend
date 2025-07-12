@@ -90,11 +90,10 @@ jobs:
           STORAGE_ACCOUNT: ${{ steps.get-storage.outputs.storage_account }}
         run: |
           echo "📤 Uploading website files to storage account: ${STORAGE_ACCOUNT}"
-          echo "DEBUG: STORAGE_ACCOUNT='${STORAGE_ACCOUNT}'"
 
           az storage blob upload-batch \
             --account-name "${STORAGE_ACCOUNT}" \
-            --auth-mode key \
+            --auth-mode login \
             --source ./frontend \
             --destination '$web' \
             --overwrite
