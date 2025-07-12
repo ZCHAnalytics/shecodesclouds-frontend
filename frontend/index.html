@@ -4,7 +4,32 @@
   <meta charset="UTF-8">
   <title>Zulfia's Cloud Resume with Azure</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      line-height: 1.6;
+      font-family: Arial, sans-serif;
+      margin: 2rem;
+    }
+    h1, h2, h3 {
+      margin-top: 2rem;
+    }
+    ul {
+      padding-left: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    #main-header, #main-footer {
+      text-align: center;
+    }
+    a {
+      color: #0078D4;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
 </head>
+
 <body>
   <header id="main-header">
     <h1>Zulfia</h1>
@@ -16,83 +41,74 @@
     <section id="skills" class="resume-section">
       <h2>Skills & Certifications</h2>
       <ul>
-        <!-- Certifications -->
-        <li>Microsoft Azure Fundamentals (AZ-900) – Certified</li>
-        <li>Microsoft Azure AI Fundamentals (AI-900) – Certified</li>
-
-        <!-- Cloud & IaC -->
-        <li>Terraform (IaC) • GitHub Actions (CI/CD) </li>
-
-        <!-- Serverless & PaaS -->
-        <li>Azure Functions • Cosmos DB (Table API)</li>
-
-        <!-- Programming & Scripting -->
-        <li>Python • PowerShell & Bash • SQL</li>
-
-        <!-- Containers & Orchestration -->
-        <li>Docker • Kubernetes</li>
-
+        <li><strong>Certifications:</strong> AZ-900 • AI-900</li>
+        <li><strong>Cloud & IaC:</strong> Azure • Terraform • GitHub Actions</li>
+        <li><strong>Serverless:</strong> Azure Functions • Cosmos DB (Table API)</li>
+        <li><strong>Languages:</strong> Python • PowerShell • Bash • SQL</li>
+        <li><strong>Containers & Orchestration:</strong> Docker • Kubernetes</li>
+        <li><strong>Projects & Labs:</strong> Cloud Resume Challenge • Kubernetes Resume Challenge</li>
       </ul>
     </section>
 
     <section id="projects" class="resume-section">
-      <h2>Projects</h2>
+
+      <h3>Cloud Projects</h3>
       <ul>
-
-        <!-- Cloud Resume Challenge -->
         <li>
-          <strong><a href="https://github.com/ZCHAnalytics/cloud-resume-challenge" target="_blank" rel="noopener">
-            Static resume site on Azure with a serverless visitor counter
-          </a></strong>  
-          <ul>
-            <li>Terraform-managed infra: Storage (static website), CDN, Cosmos DB, Function App</li>
-            <li>Python Azure Function + Cosmos DB Table API for atomic visitor counting</li>
-            <li>GitHub Actions CI/CD: infra &amp; code deployment, end-to-end testing</li>
-          </ul>
-        </li>
-
-        <!-- Retail Sales ETL -->
-        <li>
-          <strong><a href="https://github.com/ZCHAnalytics/aws-python-data-centralisation" target="_blank" rel="noopener">
-            Retail Sales ETL &amp; Data Analysis
+          <strong><a href="https://github.com/ZCHAnalytics/cloud-resume-challenge" target="_blank">
+            Cloud Resume Challenge (Azure, Terraform, CI/CD)
           </a></strong>
           <ul>
-            <li>Developed OOP Python scripts to extract & transform &gt;120k rows from AWS databases, APIs, JSON, PDF & CSV sources.</li>
-            <li>Designed a star-schema database with five dimension tables; wrote &gt;10 complex SQL queries for business insights (e.g., top-performing regions).</li>
+            <li>Hosted static resume site on Azure with serverless visitor tracking via Azure Functions + Cosmos DB.</li>
+            <li>Infrastructure as Code (Terraform), CI/CD with GitHub Actions, SBOM & vulnerability scanning.</li>
+            <li>
+              <a href="https://github.com/ZCHAnalytics/shecodesclouds-frontend" target="_blank">Frontend Code</a> |
+              <a href="https://github.com/ZCHAnalytics/shecodesclouds-backend" target="_blank">Backend Code</a>
+            </li>
           </ul>
         </li>
 
-        <!-- Database Migration -->
         <li>
-          <strong><a href="https://github.com/ZCHAnalytics/azure-database-migration" target="_blank" rel="noopener">
-            Database Migration to Azure
+          <strong><a href="https://github.com/ZCHAnalytics/azure-database-migration" target="_blank">
+            Azure Database Migration
           </a></strong>
           <ul>
-            <li>Performed a 100% database restoration for safe testing in a fresh development environment.</li>
-            <li>Implemented disaster recovery and integrated Microsoft Entra ID for identity management.</li>
+            <li>Restored production DB into a dev-safe environment; implemented disaster recovery with Entra ID auth.</li>
           </ul>
         </li>
+      </ul>
 
-        <!-- Kubernetes Challenge -->
+      <h3>Data Projects</h3>
+      <ul>
         <li>
-          <strong><a href="https://github.com/ZCHAnalytics/kubernetes-resume-challenge" target="_blank" rel="noopener">
-            Kubernetes Challenge
-          </a></strong><br>
-          Adapting a CentOS-based Kubernetes Resume Challenge to Windows using PowerShell & Terraform.
+          <strong><a href="https://github.com/ZCHAnalytics/aws-python-data-centralisation" target="_blank">
+            Retail Sales ETL & Data Analysis
+          </a></strong>
           <ul>
-            <li>Key skills: Kubernetes (cluster creation, rolling updates, autoscaling), Docker, PowerShell, Azure CLI & Terraform, CI/CD, ConfigMaps & Secrets.</li>
-            <li>Infrastructure: Sample e-commerce app, custom Dockerfiles, Kubernetes manifests, CLI helper scripts.</li>
-            <li>Extras: Helm chart packaging, persistent MariaDB storage, GitHub Actions pipeline with safe secret handling, CRLF→LF conversion for Windows.</li>
+            <li>OOP Python scripts to extract & transform 120k+ rows from AWS, APIs, JSON, PDF, and CSV.</li>
+            <li>Built star-schema model and wrote analytical SQL for actionable business insights.</li>
           </ul>
         </li>
+      </ul>
 
+      <h3>Platform Engineering & Kubernetes</h3>
+      <ul>
+        <li>
+          <strong><a href="https://github.com/ZCHAnalytics/kubernetes-resume-challenge" target="_blank">
+            Kubernetes Resume Challenge (Windows + PowerShell)
+          </a></strong>
+          <ul>
+            <li>Adapted a Linux-based K8s challenge to Windows using PowerShell, Helm, and Terraform.</li>
+            <li>Created autoscaling cluster, CI/CD pipeline, persistent DB storage, and secure secrets handling.</li>
+          </ul>
+        </li>
       </ul>
     </section>
 
     <section id="education" class="resume-section">
       <h2>Education</h2>
       <ul>
-        <li>AiCore AI &amp; Data Bootcamp, UK, 2024</li>
+        <li>AiCore AI & Data Bootcamp, UK, 2024</li>
         <li>MPhil, University of Cambridge, UK, 2010</li>
       </ul>
     </section>
