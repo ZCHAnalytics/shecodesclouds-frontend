@@ -96,7 +96,7 @@ jobs:
           if terraform state list > /dev/null 2>&1; then
             STORAGE_ACCOUNT=$(terraform output -raw storage_account_name 2>/dev/null || echo "")
             
-            if [[ -z "$STORAGE_ACCOUNT" || "%STORAGE_ACCOUNT == *"::debug::"* ]]; then
+            if [[ -z "$STORAGE_ACCOUNT" || "$STORAGE_ACCOUNT" == *"::debug::"* ]]; then
               echo "⚠️ Could not get storage account from Terraform state, using default"
               STORAGE_ACCOUNT="${{ env.STORAGE_ACCOUNT_NAME }}"
             else
