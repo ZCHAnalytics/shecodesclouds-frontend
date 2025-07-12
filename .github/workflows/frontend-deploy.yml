@@ -69,6 +69,7 @@ jobs:
         uses: hashicorp/setup-terraform@v2        # Installs Terraform CLI
         with: 
           terraform_version: 1.12.2
+          terraform_wrapper: false # This prevents the wrapper that adds debug output 
 
       - name: Get Storage Account Name
         id: get-storage
@@ -82,7 +83,7 @@ jobs:
           fi
 
           cd iaac
-          # Initialize Terraform with backend config (same as infra workflow)
+          # Initialise Terraform with backend config (same as infra workflow)
           terraform init \
             -backend-config="resource_group_name=tfstate-rg" \
             -backend-config="storage_account_name=zchtfstatestorageacc" \
@@ -93,21 +94,20 @@ jobs:
           
           # Get the storage account name from Terraform outputs
           if terraform state list > /dev/null 2>&1; then
-            RAW=$(terraform output -raw storage_account_name 2>/dev/null || echo "")
-            CLEANED=$(echo "$RAW" | tr -d '\r\n')
+            STORAGE_ACCOUNT=$(terraform output -raw storage_account_name 2>/dev/null || echo "")
             
-            if [[ -z "$CLEANED" ]]; then
+            if [[ -z "$STORAGE_ACCOUNT ZZ "%STORAGE_ACCOUNT == *"::debug::"* ]]; then
               echo "⚠️ Could not get storage account from Terraform state, using default"
-              CLEANED="${{ env.STORAGE_ACCOUNT_NAME }}"
+              STORAGE_ACCOUNT="${{ env.STORAGE_ACCOUNT_NAME }}"
             else
-              echo "✅ Got storage account from Terraform: $CLEANED"
+              echo "✅ Got storage account from Terraform: $STORAGE_ACCOUNT"
             fi
           else
             echo "⚠️ No Terraform state found, using default"
-            CLEANED="${{ env.STORAGE_ACCOUNT_NAME }}"
+            STORAGE_ACCOUNT="${{ env.STORAGE_ACCOUNT_NAME }}"
           fi
           
-          echo "storage_account=$CLEANED" >> "$GITHUB_OUTPUT"
+          echo "storage_account=$STORAGE_ACCOUNT" >> "$GITHUB_OUTPUT"
 
       - name: Verify Storage Account and Static Website
         run: |
@@ -198,24 +198,19 @@ jobs:
           CDN_ENDPOINT=$(terraform output -raw cdn_endpoint_name 2>/dev/null || echo "")
           CDN_PROFILE=$(terraform output -raw cdn_profile_name 2>/dev/null || echo "")
           
-          # Clean the outputs
-          CDN_ENDPOINT=$(echo "$CDN_ENDPOINT" | tr -d '\r\n')
-          CDN_PROFILE=$(echo "$CDN_PROFILE" | tr -d '\r\n')
-          
-          # Use defaults if outputs are empty
-          if [[ -z "$CDN_ENDPOINT" ]]; then 
-            echo "⚠️ Could not get CDN endpoint from Terraform, using default"
+          # Check for debug output and use defaults if found
+          if [[ "$CDN_ENDPOINT" == *"::debug::"* ]] || [[ -z "$CDN_ENDPOINT" ]]; then 
+            echo "⚠️ Could not get clean CDN endpoint from Terraform, using default"
             CDN_ENDPOINT="${{ env.CDN_ENDPOINT_NAME }}"
           fi
           
-          if [[ -z "$CDN_PROFILE" ]]; then 
-            echo "⚠️ Could not get CDN profile from Terraform, using default"
+          if [[ "$CDN_PROFILE" == *"::debug::"* ]] || [[ -z "$CDN_PROFILE" ]]; then 
+            echo "⚠️ Could not get clean CDN profile from Terraform, using default"
             CDN_PROFILE="${{ env.CDN_PROFILE_NAME }}"
           fi
           
           echo "cdn_endpoint=$CDN_ENDPOINT" >> "$GITHUB_OUTPUT"
           echo "cdn_profile=$CDN_PROFILE" >> "$GITHUB_OUTPUT"
-
       - name: Purge CDN Cache
         env:
           RESOURCE_GROUP_NAME: ${{ env.RESOURCE_GROUP_NAME }}
